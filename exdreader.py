@@ -2,6 +2,7 @@ import os
 from io import BufferedReader
 import enum
 import zlib
+from typing import List
 
 
 class SqPackCatergories(enum.IntEnum):
@@ -167,14 +168,12 @@ class SqPack:
         file_info_bytes = self.file.read(24)
         file_info = SqPackFileInfo(file_info_bytes, offset)
         data: list[bytes] = []
-        match file_info.type:
-            case SqPackFileType.Empty:
-                raise Exception('File located at 0x' + hex(offset) + ' is empty.')
-            case SqPackFileType.Standard:
-                data = self.read_standard_file(file_info)
-            case _:
-                raise Exception('Type: ' + str(file_info.type) + ' not implemented.')
-        return data
+        if file_info.type == SqPackFileType.Empty:
+            raise Exception(f'File located at 0x{hex(offset)} is empty.')
+        elif file_info.type == SqPackFileType.Standard:
+            return self.read_standard_file(file_info)
+
+        raise Exception('Type: ' + str(file_info.type) + ' not implemented.')
 
     def read_standard_file(self, file_info: SqPackFileInfo):
         block_bytes = self.file.read(file_info.number_of_blocks*8)
@@ -268,7 +267,7 @@ class GameData:
 
 
 class ExcelListFile:
-    def __init__(self, data: list[bytes]):
+    def __init__(self, data: List[bytes]):
         self.data = b''.join(data).split('\r\n'.encode('utf-8'))
         self.parse()
 
