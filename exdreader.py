@@ -154,7 +154,7 @@ class SqPack:
     def discover_data_files(self):
         self.load_index_header()
         self.load_hash_table()
-        self.data_files: list[str] = []
+        self.data_files: List[str] = []
         for file in get_sqpack_files(self.root, self.path.rsplit('\\', 1)[0].split('\\')[-1]):
             for i in range(0, self.index_header.number_of_data_file):
                 name = self.path.rsplit('.', 1)[0] + '.dat' + str(i)
@@ -167,17 +167,18 @@ class SqPack:
         self.file.seek(offset)
         file_info_bytes = self.file.read(24)
         file_info = SqPackFileInfo(file_info_bytes, offset)
-        data: list[bytes] = []
+        data: List[bytes] = []
         if file_info.type == SqPackFileType.Empty:
             raise Exception(f'File located at 0x{hex(offset)} is empty.')
         elif file_info.type == SqPackFileType.Standard:
-            return self.read_standard_file(file_info)
-
-        raise Exception('Type: ' + str(file_info.type) + ' not implemented.')
+            data = self.read_standard_file(file_info)
+        else:
+            raise Exception('Type: ' + str(file_info.type) + ' not implemented.')
+        return data
 
     def read_standard_file(self, file_info: SqPackFileInfo):
         block_bytes = self.file.read(file_info.number_of_blocks*8)
-        data: list[bytes] = []
+        data: List[bytes] = []
         for i in range(file_info.number_of_blocks):
             block = DatStdFileBlockInfos(block_bytes[i*8:i*8+8])
             self.file.seek(file_info.offset + file_info.header_size + block.offset)
@@ -198,7 +199,7 @@ class Repository:
     def __init__(self, name: str, root: str):
         self.root = root
         self.name = name
-        self.sqpacks: list[SqPack] = []
+        self.sqpacks: List[SqPack] = []
         self.index: dict[int, tuple[SqPackIndexHashTable, SqPack]] = {}
         self.expansion_id = 0
         self.get_expansion_id()
@@ -355,7 +356,7 @@ def get_game_data_folders(root: str):
 
 
 def get_files(path):
-    files: list[bytes] = []
+    files: List[bytes] = []
     for (dir_path, dir_names, file_names) in os.walk(path):
         files.extend(os.path.join(dir_path, file) for file in file_names)
 
