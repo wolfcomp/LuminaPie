@@ -1,52 +1,11 @@
 from luminapie.sqpack import SqPack, SqPackIndexHashTable
 from luminapie.file_handlers import get_game_data_folders, get_sqpack_index
 from luminapie.se_crc import Crc32
+from luminapie.exdschema import get_definitions
+from luminapie.definitions import SemanticVersion
 import os
 
 crc = Crc32()
-
-
-class SemanticVersion:
-    """Represents a semantic version string that can compare versions"""
-
-    year: int
-    month: int
-    date: int
-    patch: int
-    build: int
-
-    def __init__(self, year: int, month: int, date: int, patch: int, build: int = 0) -> None:
-        self.year = year
-        self.month = month
-        self.date = date
-        self.patch = patch
-        self.build = build
-
-    def __lt__(self, other: 'SemanticVersion') -> bool:
-        return (
-            self.year < other.year
-            or self.month < other.month
-            or self.date < other.date
-            or self.patch < other.patch
-            or self.build < other.build
-        )
-
-    def __repr__(self) -> str:
-        return f'{self.year}.{self.month.__str__().rjust(2, "0")}.{self.date.__str__().rjust(2, "0")}.{self.patch.__str__().rjust(4, "0")}.{self.build.__str__().rjust(4, "0")}'
-
-    def __eq__(self, __value: object) -> bool:
-        if not isinstance(__value, SemanticVersion):
-            return False
-        return (
-            self.year == __value.year
-            and self.month == __value.month
-            and self.date == __value.date
-            and self.patch == __value.patch
-            and self.build == __value.build
-        )
-
-    def __hash__(self) -> int:
-        return hash(repr(self))
 
 
 class Repository:
@@ -97,9 +56,10 @@ class Repository:
 
 
 class GameData:
-    def __init__(self, root: str):
+    def __init__(self, root: str, load_schema: bool = True):
         self.root = root
         self.repositories: dict[int, Repository] = {}
+        self.load_schema = load_schema
         self.setup()
 
     def get_repo_index(self, folder: str):
@@ -117,8 +77,14 @@ class GameData:
             repo.parse_version()
             repo.setup_indexes()
 
+        if self.load_schema:
+            self.schema = get_definitions(self.repositories[0].version)
+
     def get_file(self, file: 'ParsedFileName'):
         return self.repositories[self.get_repo_index(file.repo)].get_file(file.index)
+
+    def get_exd_schema(self, key: str):
+        return self.schema[key]
 
     def __repr__(self):
         return f'''Repositories: {self.repositories}'''

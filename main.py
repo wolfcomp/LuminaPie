@@ -14,15 +14,13 @@ def main():
 
     exd_headers: dict[int, tuple[dict[int, tuple[str, str]], int]] = {}
 
-    exd_schema = get_definitions(game_data.repositories[0].version)
-
     for key in exd_map:
-        print(f'Parsing schema for {exd_map[key]}')
+        # print(f'Parsing schema for {exd_map[key]}')
         exd_headers[key] = ExcelHeaderFile(game_data.get_file(ParsedFileName(f'exd/{exd_map[key]}.exh'))).map_names(
-            exd_schema[exd_map[key]]
+            game_data.get_exd_schema(exd_map[key])
         )
 
-    print(exd_headers)
+    # print(exd_headers)
 
 
 main()

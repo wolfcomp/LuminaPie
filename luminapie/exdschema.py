@@ -1,8 +1,7 @@
 from urllib.request import urlopen, Request
 from urllib.error import HTTPError, URLError
 from json import loads
-from luminapie.game_data import SemanticVersion
-from luminapie.definitions import Definition, RepeatDefinition, get_definition
+from luminapie.definitions import Definition, RepeatDefinition, get_definition, SemanticVersion
 from typing import Union
 from yaml import load, Loader
 from zipfile import ZipFile
