@@ -6,6 +6,49 @@ import os
 crc = Crc32()
 
 
+class SemanticVersion:
+    """Represents a semantic version string that can compare versions"""
+
+    year: int
+    month: int
+    date: int
+    patch: int
+    build: int
+
+    def __init__(self, year: int, month: int, date: int, patch: int, build: int = 0) -> None:
+        self.year = year
+        self.month = month
+        self.date = date
+        self.patch = patch
+        self.build = build
+
+    def __lt__(self, other: 'SemanticVersion') -> bool:
+        return (
+            self.year < other.year
+            or self.month < other.month
+            or self.date < other.date
+            or self.patch < other.patch
+            or self.build < other.build
+        )
+
+    def __repr__(self) -> str:
+        return f'{self.year}.{self.month.__str__().rjust(2, "0")}.{self.date.__str__().rjust(2, "0")}.{self.patch.__str__().rjust(4, "0")}.{self.build.__str__().rjust(4, "0")}'
+
+    def __eq__(self, __value: object) -> bool:
+        if not isinstance(__value, SemanticVersion):
+            return False
+        return (
+            self.year == __value.year
+            and self.month == __value.month
+            and self.date == __value.date
+            and self.patch == __value.patch
+            and self.build == __value.build
+        )
+
+    def __hash__(self) -> int:
+        return hash(repr(self))
+
+
 class Repository:
     def __init__(self, name: str, root: str):
         self.root = root
@@ -27,9 +70,9 @@ class Repository:
             versionPath = os.path.join(self.root, 'sqpack', self.name, self.name + '.ver')
         if os.path.exists(versionPath):
             with open(versionPath, 'r') as f:
-                self.version = f.read().strip()
+                self.version = SemanticVersion(*(int(v) for v in f.read().strip().split('.')))
         else:
-            self.version = "Unknown"
+            self.version = SemanticVersion(0, 0, 0, 0)
 
     def setup_indexes(self):
         for file in get_sqpack_index(self.root, self.name):

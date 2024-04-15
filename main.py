@@ -1,18 +1,28 @@
 import os
 import json
 from luminapie.game_data import GameData, ParsedFileName
-from luminapie.excel import ExcelListFile
+from luminapie.excel import ExcelListFile, ExcelHeaderFile
+from luminapie.exdschema import get_definitions
 
 
 def main():
     f = open(os.path.join(os.getenv('APPDATA'), 'XIVLauncher', 'launcherConfigV3.json'), 'r')
     config = json.load(f)
     f.close()
-    # game_data = GameData(os.path.join(config['GamePath'], 'game'))
-    game_data = GameData("C:\\Users\\magnu\\Downloads\\ffxiv-dawntrail-bench\\game")
+    game_data = GameData(os.path.join(config['GamePath'], 'game'))
     exd_map = ExcelListFile(game_data.get_file(ParsedFileName('exd/root.exl'))).dict
+
+    exd_headers: dict[int, tuple[dict[int, tuple[str, str]], int]] = {}
+
+    exd_schema = get_definitions(game_data.repositories[0].version)
+
     for key in exd_map:
-        print(key, exd_map[key])
+        print(f'Parsing schema for {exd_map[key]}')
+        exd_headers[key] = ExcelHeaderFile(game_data.get_file(ParsedFileName(f'exd/{exd_map[key]}.exh'))).map_names(
+            exd_schema[exd_map[key]]
+        )
+
+    print(exd_headers)
 
 
 main()

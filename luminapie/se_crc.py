@@ -60,10 +60,10 @@ class Crc32:
         filename = path_parts[-1]
         folder = path.rstrip(filename).rstrip('/')
 
-        folder_crc = self.calc(folder.encode('utf-8'))
-        file_crc = self.calc(filename.encode('utf-8'))
+        foldercrc = self.calc(folder.encode('utf-8'))
+        filecrc = self.calc(filename.encode('utf-8'))
 
-        return folder_crc << 32 | file_crc
+        return foldercrc << 32 | filecrc
 
     def calc_index2(self, path: str):
         return self.calc(path.encode('utf-8'))

@@ -1,4 +1,5 @@
 from luminapie.enums import ExcelColumnDataType
+from luminapie.definitions import Definition
 
 
 class ExcelListFile:
@@ -18,6 +19,9 @@ class ExcelListFile:
             if linearr[1] == '-1':
                 continue
             self.dict[int(linearr[1])] = linearr[0]
+
+    def __repr__(self):
+        return f'''ExcelListFile: {self.header}, {self.dict}'''
 
 
 class ExcelHeader:
@@ -52,8 +56,11 @@ class ExcelColumnDefinition:
         self.type = ExcelColumnDataType(int.from_bytes(self.data[0:2], 'big'))
         self.offset = int.from_bytes(self.data[2:4], 'big')
 
-    def __repr__(self):
-        return f'''[{self.type.name}, {self.offset:x}]'''
+    def __lt__(self, other: 'ExcelColumnDefinition') -> bool:
+        return self.offset <= other.offset
+
+    def __repr__(self) -> str:
+        return f'''Column: {self.type.name}, offset: {self.offset:x}'''
 
 
 class ExcelDataPagination:
@@ -66,7 +73,7 @@ class ExcelDataPagination:
         self.row_count = int.from_bytes(self.data[2:4], 'big')
 
     def __repr__(self):
-        return f'''[{self.start_id:x}, {self.row_count}]'''
+        return f'''Pagination: {self.start_id:x}, count: {self.row_count}'''
 
 
 class ExcelHeaderFile:
@@ -85,6 +92,7 @@ class ExcelHeaderFile:
         self.column_definitions: list[ExcelColumnDefinition] = []
         for i in range(self.header.column_count):
             self.column_definitions.append(ExcelColumnDefinition(self.data[32 + (i * 4) : 32 + ((i + 1) * 4)]))
+        self.column_definitions = sorted(self.column_definitions)
         self.pagination: list[ExcelDataPagination] = []
         for i in range(self.header.page_count):
             self.pagination.append(
@@ -102,8 +110,7 @@ class ExcelHeaderFile:
         for i in range(self.header.language_count):
             self.languages.append(self.data[32 + (self.header.column_count * 4) + (self.header.page_count * 4) + i])
 
-    def map_names(self, names: dict[int, str] = {}) -> tuple[dict[int, tuple[str, str]], int]:
-        """Maps the header column definitions to names and c types."""
+    def map_names(self, names: list[Definition]) -> tuple[dict[int, tuple[str, str]], int]:
         mapped: dict[int, tuple[str, str]] = {}
         largest_offset_index: int = 0
         for i in range(self.header.column_count):
@@ -119,31 +126,20 @@ class ExcelHeaderFile:
                 [_, name] = mapped[self.column_definitions[i].offset]
                 if name.split('_')[0] == 'Unknown':
                     continue
-                if i not in names:
-                    continue
                 if column_data_type_to_c_type(self.column_definitions[i].type) != 'unsigned __int8':
                     continue
                 else:
                     mapped[self.column_definitions[i].offset] = (
                         column_data_type_to_c_type(self.column_definitions[i].type),
-                        f'{name}_{names[i]}',
+                        f'{name}_{names[i].name}',
                     )
             else:
-                if i not in names:
-                    mapped[self.column_definitions[i].offset] = (
-                        column_data_type_to_c_type(self.column_definitions[i].type),
-                        f'Unknown_{self.column_definitions[i].offset:X}',
-                    )
-                else:
-                    mapped[self.column_definitions[i].offset] = (
-                        column_data_type_to_c_type(self.column_definitions[i].type),
-                        names[i],
-                    )
+                mapped[self.column_definitions[i].offset] = (
+                    column_data_type_to_c_type(self.column_definitions[i].type),
+                    names[i].name,
+                )
         mapped = dict(sorted(mapped.items()))
         return [mapped, size]
-
-    def __repr__(self):
-        return f'''ExcelHeaderFile: {self.header} , {self.column_definitions} , {self.pagination} , {self.languages}'''
 
 
 def column_data_type_to_c_type(column_data_type: ExcelColumnDataType) -> str:
@@ -177,9 +173,9 @@ def column_data_type_to_c_type(column_data_type: ExcelColumnDataType) -> str:
         or column_data_type == ExcelColumnDataType.PackedBool6
         or column_data_type == ExcelColumnDataType.PackedBool7
     ):
-        return 'unsigned __int8'  # IDA doesn't support bitfields in decompilation, so we'll just use a byte. A different method would be to create an enum for each bitfield, but that's a lot of work that i cant be bothered doing.
+        return 'unsigned __int8'
     elif column_data_type == ExcelColumnDataType.String:
-        return '__unsigned __int32'  # strings are stored as a 4 byte offset to a string table, so we'll just use a 4 byte integer since another function handles reasign of strings.
+        return '__unsigned __int32'
 
 
 def column_data_type_to_size(column_data_type: ExcelColumnDataType) -> int:
