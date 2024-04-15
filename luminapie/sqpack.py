@@ -4,12 +4,16 @@ import os
 import zlib
 from luminapie.file_handlers import get_sqpack_files
 
+
 class SqPackFileInfo:
     def __init__(self, bytes: bytes, offset: int):
         self.header_size = int.from_bytes(bytes[0:4], byteorder='little')
         self.type = SqPackFileType(int.from_bytes(bytes[4:8], byteorder='little'))
         self.raw_file_size = int.from_bytes(bytes[8:12], byteorder='little')
-        self.unknown = [int.from_bytes(bytes[12:16], byteorder='little'), int.from_bytes(bytes[16:20], byteorder='little')]
+        self.unknown = [
+            int.from_bytes(bytes[12:16], byteorder='little'),
+            int.from_bytes(bytes[16:20], byteorder='little'),
+        ]
         self.number_of_blocks = int.from_bytes(bytes[20:24], byteorder='little')
         self.offset = offset
 
@@ -37,7 +41,7 @@ class SqPackHeader:
         self.magic = file.read(8)
         self.platform_id = SqPackPlatformId(int.from_bytes(file.read(1), byteorder='little'))
         self.unknown = file.read(3)
-        if (self.platform_id != SqPackPlatformId.PS3):
+        if self.platform_id != SqPackPlatformId.PS3:
             self.size = int.from_bytes(file.read(4), byteorder='little')
             self.version = int.from_bytes(file.read(4), byteorder='little')
             self.type = int.from_bytes(file.read(4), byteorder='little')
@@ -140,18 +144,18 @@ class SqPack:
         return data
 
     def read_standard_file(self, file_info: SqPackFileInfo):
-        block_bytes = self.file.read(file_info.number_of_blocks*8)
+        block_bytes = self.file.read(file_info.number_of_blocks * 8)
         data: list[bytes] = []
         for i in range(file_info.number_of_blocks):
-            block = DatStdFileBlockInfos(block_bytes[i*8:i*8+8])
+            block = DatStdFileBlockInfos(block_bytes[i * 8 : i * 8 + 8])
             self.file.seek(file_info.offset + file_info.header_size + block.offset)
             block_header = DatBlockHeader(self.file.read(16))
-            if(block_header.dat_block_type == 32000):
+            if block_header.dat_block_type == 32000:
                 data.append(self.file.read(block_header.block_data_size))
             else:
                 data.append(zlib.decompress(self.file.read(block_header.block_data_size), wbits=-15))
 
         return data
-    
+
     def __repr__(self):
         return f'''Path: {os.path.join(self.root, 'sqpack', self.path)} Header: {self.header}'''

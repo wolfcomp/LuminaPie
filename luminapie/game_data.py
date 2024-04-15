@@ -5,6 +5,7 @@ import os
 
 crc = Crc32()
 
+
 class Repository:
     def __init__(self, name: str, root: str):
         self.root = root
@@ -15,12 +16,12 @@ class Repository:
         self.get_expansion_id()
 
     def get_expansion_id(self):
-        if (self.name.startswith('ex')):
+        if self.name.startswith('ex'):
             self.expansion_id = int(self.name.removeprefix('ex'))
 
     def parse_version(self):
         versionPath = ""
-        if (self.name == 'ffxiv'):
+        if self.name == 'ffxiv':
             versionPath = os.path.join(self.root, 'ffxivgame.ver')
         else:
             versionPath = os.path.join(self.root, 'sqpack', self.name, self.name + '.ver')
@@ -47,7 +48,7 @@ class Repository:
         id = index.data_file_id()
         offset = index.data_file_offset()
         return SqPack(self.root, sqpack.data_files[id]).read_file(offset)
-    
+
     def __repr__(self):
         return f'''Repository: {self.name} ({self.version}) - {self.expansion_id}'''
 
@@ -59,7 +60,7 @@ class GameData:
         self.setup()
 
     def get_repo_index(self, folder: str):
-        if (folder == 'ffxiv'):
+        if folder == 'ffxiv':
             return 0
         else:
             return int(folder.removeprefix('ex'))
@@ -90,6 +91,6 @@ class ParsedFileName:
         self.repo = parts[1]
         if self.repo[0] != 'e' or self.repo[1] != 'x' or not self.repo[2].isdigit():
             self.repo = 'ffxiv'
-    
+
     def __repr__(self):
         return f'''ParsedFileName: {self.path}, category: {self.category}, index: {self.index:X}, index2: {self.index2:X}, repo: {self.repo}'''
