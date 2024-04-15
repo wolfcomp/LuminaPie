@@ -10,7 +10,7 @@ from tempfile import TemporaryFile
 EXDSchemaFields = dict[str, Union[str, list[str], 'EXDSchemaFields']]
 
 
-def get_url(url: str, supress: bool = False) -> bytes | None:
+def get_url(url: str, supress: bool = False) -> Union[bytes, None]:
     req = Request(url)
     try:
         resp = urlopen(req)
