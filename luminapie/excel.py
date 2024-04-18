@@ -175,7 +175,7 @@ def column_data_type_to_c_type(column_data_type: ExcelColumnDataType) -> str:
     ):
         return 'unsigned __int8'
     elif column_data_type == ExcelColumnDataType.String:
-        return '__unsigned __int32'
+        return 'unsigned __int32'
 
 
 def column_data_type_to_size(column_data_type: ExcelColumnDataType) -> int:
